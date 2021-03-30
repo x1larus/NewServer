@@ -9,6 +9,7 @@
 				"-g",
 				"${fileDirname}/main.cc",
 				"${fileDirname}/socket_communication.cc",
+				"${fileDirname}/ev_loop.cc",
 				"${fileDirname}/encode.cc",
 				"-o",
 				"${fileDirname}/newserver",

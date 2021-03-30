@@ -14,6 +14,8 @@
 
 constexpr int MAX = 4096;
 
+class ev_loop;
+
 struct client
 {
     int socket;
