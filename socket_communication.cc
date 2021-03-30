@@ -17,6 +17,13 @@ socket_communication::socket_communication()
     srv_address.sin_addr.s_addr = INADDR_ANY;
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     stop_server = false;
+    loop = nullptr;
+    return;
+}
+
+void socket_communication::set_evloop_address(ev_loop *a)
+{
+    loop = a;
     return;
 }
 
@@ -61,31 +68,18 @@ void socket_communication::client_listener(client curr_client)
         int s = recv(curr_client.socket, buffer, MAX, 0);
         if (s == 0)
             continue;
-        
-        std::wstring newbuf = to_wstring(buffer, s);
-        std::wcout << newbuf << std::endl;
-        s = send(curr_client.socket, to_char(newbuf), MAX, 0);
+        std::wstring request = to_wstring(buffer, s);
+        std::map<std::string, std::wstring> args;
+        args["request"] = request;
+        loop->add_task("recv_parse", args);
     }
 }
 
-std::wstring socket_communication::to_wstring(char str[], int size) 
+void socket_communication::send_to_client(std::wstring request)
 {
-    std::wstring result;
-    for (int i = 0; i < size; i += 2)
+    std::lock_guard<std::mutex> lock(active_client_lock);
+    for (auto x = active_client.begin(); x != active_client.end(); x++)
     {
-        wchar_t a = str[i] + (str[i+1] * 256);
-        result.push_back(a);
+        int s = send(x->second.socket, to_char(request), request.size()*2+1, 0);
     }
-    return result;
-}
-
-char* socket_communication::to_char(std::wstring str)
-{
-    char *result = new char[MAX];
-    for (u_int32_t i = 0; i < str.size(); i++)
-    {
-        result[i*2+1] = str[i] / 256;
-        result[i*2] = str[i] - (result[i*2+1] * 256);
-    }
-    return result;
 }

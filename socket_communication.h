@@ -1,4 +1,6 @@
 #pragma once
+#include "encode.cc"
+#include "ev_loop.h"
 #include <thread>
 #include <sys/types.h>
 #include <netinet/in.h>
@@ -10,7 +12,7 @@
 #include <vector>
 #include <iostream>
 
-constexpr int MAX = 1024;
+constexpr int MAX = 4096;
 
 struct client
 {
@@ -22,7 +24,6 @@ struct client
     client(int, sockaddr_in, socklen_t);
 };
 
-
 class socket_communication
 {
 private:
@@ -33,18 +34,18 @@ private:
     std::mutex active_client_lock;
     std::mutex threads_list_lock;
     std::vector<std::thread*> threads_list;
-    bool stop_server;   
+    bool stop_server;
+    ev_loop *loop;  
     
     //methods
     void incoming_connections_listener();
     void client_listener(client);  
     //return TRUE if client added, otherwise, FALSE
     bool add_new_active_client(client);
-    std::wstring to_wstring(char[], int);
-    char* to_char(std::wstring);
 
 public:
     socket_communication();
     void start(int);
-
+    void set_evloop_address(ev_loop*);
+    void send_to_client(std::wstring);
 };
