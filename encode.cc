@@ -1,5 +1,4 @@
-#pragma once
-#include <string>
+#include "encode.h"
 
 //encode 2-char to wstring
 std::wstring to_wstring(char str[], int size) 
@@ -17,7 +16,7 @@ std::wstring to_wstring(char str[], int size)
 std::wstring to_wstring(std::string str) 
 {
     std::wstring result;
-    for (int i = 0; i < str.size(); i++)
+    for (unsigned int i = 0; i < str.size(); i++)
     {
         result.push_back(str[i]);
         result.push_back('\0');

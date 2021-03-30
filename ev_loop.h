@@ -1,5 +1,5 @@
 #pragma once
-#include "encode.cc"
+#include "encode.h"
 #include "socket_communication.h"
 #include <mutex>
 #include <condition_variable>

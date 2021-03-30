@@ -1,5 +1,5 @@
 #pragma once
-#include "encode.cc"
+#include "encode.h"
 #include "ev_loop.h"
 #include <thread>
 #include <sys/types.h>

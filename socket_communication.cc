@@ -80,6 +80,6 @@ void socket_communication::send_to_client(std::wstring request)
     std::lock_guard<std::mutex> lock(active_client_lock);
     for (auto x = active_client.begin(); x != active_client.end(); x++)
     {
-        int s = send(x->second.socket, to_char(request), request.size()*2+1, 0);
+        send(x->second.socket, to_char(request), request.size()*2+1, 0);
     }
 }
