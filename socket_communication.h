@@ -16,14 +16,15 @@ constexpr int MAX = 4096;
 
 class ev_loop;
 
-struct client
+struct client_data
 {
     int socket;
     //я хз зачем это
     socklen_t clilen;
     sockaddr_in cli_address;
     bool is_authorized;
-    client(int, sockaddr_in, socklen_t);
+    client_data() = default;
+    client_data(int, sockaddr_in, socklen_t);
 };
 
 class socket_communication
@@ -32,7 +33,7 @@ private:
     int sockfd;
     sockaddr_in srv_address;
     int port_number;
-    std::map<int, client> active_client;   
+    std::map<int, client_data> active_client;   
     std::mutex active_client_lock;
     std::mutex threads_list_lock;
     std::vector<std::thread*> threads_list;
@@ -41,9 +42,9 @@ private:
     
     //methods
     void incoming_connections_listener();
-    void client_listener(client);  
+    void client_listener(client_data);  
     //return TRUE if client added, otherwise, FALSE
-    bool add_new_active_client(client);
+    bool add_new_active_client(client_data);
 
 public:
     socket_communication();

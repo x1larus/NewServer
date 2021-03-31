@@ -1,6 +1,6 @@
 #include "socket_communication.h"
 
-client::client(int s, sockaddr_in in, socklen_t len)
+client_data::client_data(int s, sockaddr_in in, socklen_t len)
 {
     socket = s;
     cli_address = in;
@@ -52,14 +52,15 @@ void socket_communication::incoming_connections_listener()
         int newsock = accept(sockfd,(struct sockaddr *) &cli_addr, &clilen);
         if (newsock <= 0)
             continue;
-        client new_client(newsock, cli_addr, clilen);
+        client_data new_client(newsock, cli_addr, clilen);
+        active_client[0] = new_client;
         std::thread *thr = new std::thread([this, new_client] () { client_listener(new_client); });
         std::lock_guard<std::mutex> lock(threads_list_lock);
         threads_list.push_back(thr);
     }
 }
 
-void socket_communication::client_listener(client curr_client)
+void socket_communication::client_listener(client_data curr_client)
 {
     while (!stop_server)
     {

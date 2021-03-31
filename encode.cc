@@ -41,7 +41,7 @@ char* to_char(std::wstring str)
 std::string to_string(std::wstring str)
 {
     std::string result;
-    for (u_int32_t i = 0; i < str.size(); i += 2)
+    for (u_int32_t i = 0; i < str.size(); i++)
     {
         char a = str[i] % 256;
         result.push_back(a);

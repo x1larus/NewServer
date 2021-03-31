@@ -13,16 +13,28 @@ void ev_loop::set_sender_address(socket_communication *a)
 
 void ev_loop::loop()
 {
-    std::unique_lock<std::mutex> cv_lock(task_queue_lock);
-    while (task_queue.empty())
-        waiter.wait(cv_lock, [this] () { return !task_queue.empty(); });
-    auto curr_task = task_queue.front();
-    task_queue.pop();
-    std::string command = curr_task.first;
-    if (command == "recv_parse")
-        recv_parse(curr_task.second);
-    if (command == "global")
-        build_request(curr_task.second);
+    while (true)
+    {
+        std::unique_lock<std::mutex> cv_lock(task_queue_lock);
+        while (task_queue.empty())
+            waiter.wait(cv_lock, [this] () { return !task_queue.empty(); });
+        auto curr_task = task_queue.front();
+        task_queue.pop();
+        std::string command = curr_task.first;
+        if (command == "recv_parse")
+            recv_parse(curr_task.second);
+        if (command == "global")
+            build_request(curr_task.second);
+    }
+}
+
+void ev_loop::add_task(std::string command, std::map<std::string, std::wstring> args)
+{
+    std::pair<std::string, std::map<std::string, std::wstring> > task(command, args);
+    std::lock_guard<std::mutex> lock(task_queue_lock);
+    task_queue.push(task);
+    waiter.notify_one();
+    return;
 }
 
 //request example : TYPE=<global>;SENDER=<x1larus>;RECIEVERS=<all>;MSG=<some fucking shit>.
@@ -42,12 +54,14 @@ void ev_loop::recv_parse(std::map<std::string, std::wstring> args)
             continue;
         if (curr % 256 == '.')
             break;
-        if (curr % 256 == '<')
+        if (curr % 256 == '<') {
             is_value = true;
+            continue;
+        }
         if (curr % 256 == '>')
         {
             is_value = false;
-            args[to_string(key)] = value;
+            result[to_string(key)] = value;
             key.erase();
             value.erase();
             continue;
@@ -59,10 +73,10 @@ void ev_loop::recv_parse(std::map<std::string, std::wstring> args)
         else
             key.push_back(curr);
     }
-    std::string command = to_string(args["TYPE"]);
+    std::string command = to_string(result["TYPE"]);
     if (command.empty())
         return;
-    else add_task(command, args);
+    else add_task(command, result);
     return;
 }
 
