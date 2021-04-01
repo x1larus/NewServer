@@ -14,6 +14,7 @@ class ev_loop
 private:
     std::queue <std::pair<std::string, std::map<std::string, std::wstring> > > task_queue;
     std::condition_variable waiter;
+    std::mutex waiter_lock;
     std::mutex task_queue_lock;
     std::thread *loop_thread;
     socket_communication *sender;

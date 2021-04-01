@@ -1,7 +1,7 @@
 #include "encode.h"
 
 //encode 2-char to wstring
-std::wstring to_wstring(char str[], int size) 
+std::wstring unicode_to_wstring(char str[], int size) 
 {
     std::wstring result;
     for (int i = 0; i < size; i += 2)
@@ -13,20 +13,19 @@ std::wstring to_wstring(char str[], int size)
 }
 
 //encode 1-char to wstring
-std::wstring to_wstring(std::string str) 
+std::wstring ascii_to_wstring(std::string str) 
 {
     std::wstring result;
     for (unsigned int i = 0; i < str.size(); i++)
     {
         result.push_back(str[i]);
-        result.push_back('\0');
     }
     return result;
 }
 
 
 //return 2-char array
-char* to_char(std::wstring str)
+char* unicode_get_bytes(std::wstring str)
 {
     char *result = new char[str.size()*2 + 1];
     for (u_int32_t i = 0; i < str.size(); i++)
@@ -38,7 +37,7 @@ char* to_char(std::wstring str)
 }
 
 //return 1-char array
-std::string to_string(std::wstring str)
+std::string unicode_to_ascii(std::wstring str)
 {
     std::string result;
     for (u_int32_t i = 0; i < str.size(); i++)

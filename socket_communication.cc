@@ -69,7 +69,7 @@ void socket_communication::client_listener(client_data curr_client)
         int s = recv(curr_client.socket, buffer, MAX, 0);
         if (s == 0)
             continue;
-        std::wstring request = to_wstring(buffer, s);
+        std::wstring request = unicode_to_wstring(buffer, s);
         std::map<std::string, std::wstring> args;
         args["request"] = request;
         loop->add_task("recv_parse", args);
@@ -79,8 +79,9 @@ void socket_communication::client_listener(client_data curr_client)
 void socket_communication::send_to_client(std::wstring request)
 {
     std::lock_guard<std::mutex> lock(active_client_lock);
+    std::wcout << request << std::endl;
     for (auto x = active_client.begin(); x != active_client.end(); x++)
     {
-        send(x->second.socket, to_char(request), request.size()*2+1, 0);
+        send(x->second.socket, unicode_get_bytes(request), request.size()*2, 0);
     }
 }
