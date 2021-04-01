@@ -1,6 +1,5 @@
 #include "encode.h"
 
-//encode 2-char to wstring
 std::wstring unicode_to_wstring(char str[], int size) 
 {
     std::wstring result;
@@ -12,7 +11,6 @@ std::wstring unicode_to_wstring(char str[], int size)
     return result;
 }
 
-//encode 1-char to wstring
 std::wstring ascii_to_wstring(std::string str) 
 {
     std::wstring result;
@@ -23,8 +21,6 @@ std::wstring ascii_to_wstring(std::string str)
     return result;
 }
 
-
-//return 2-char array
 char* unicode_get_bytes(std::wstring str)
 {
     char *result = new char[str.size()*2 + 1];
@@ -36,7 +32,6 @@ char* unicode_get_bytes(std::wstring str)
     return result;
 }
 
-//return 1-char array
 std::string unicode_to_ascii(std::wstring str)
 {
     std::string result;
