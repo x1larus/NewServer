@@ -54,13 +54,14 @@ void ev_loop::recv_parse(std::map<std::string, std::wstring> args)
     {
         if ((request[i] % 256 == '=' || request[i] % 256 == ';' || request[i] == 0) && !is_value)
             continue;
-        if ((request[i] % 256 == '.') && (request[i] / 256 == 0))
+        if ((request[i] % 256 == '.') && (request[i] / 256 == 0) && !is_value)
             break;
-        if ((request[i] % 256 == '<') && (request[i] / 256 == 0)) {
+        if ((request[i] % 256 == '<') && (request[i] / 256 == 0) && !is_value) 
+        {
             is_value = true;
             continue;
         }
-        if ((request[i] % 256 == '>') && (request[i] / 256 == 0))
+        if ((request[i] % 256 == '>') && (request[i] / 256 == 0) && (request[i+1] % 256 == ';') && (request[i+1] / 256 == 0))
         {
             is_value = false;
             result[unicode_to_ascii(key)] = value;
