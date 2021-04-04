@@ -43,12 +43,12 @@ private:
     //methods
     void incoming_connections_listener();
     void client_listener(client_data);  
-    //return TRUE if client added, otherwise, FALSE
-    bool add_new_active_client(client_data);
 
 public:
     socket_communication();
     void start(int);
     void set_evloop_address(ev_loop*);
     void send_to_client(std::wstring);
+    //return TRUE if client added, otherwise, FALSE
+    bool add_new_active_client(client_data);
 };

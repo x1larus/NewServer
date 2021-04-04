@@ -53,7 +53,6 @@ void socket_communication::incoming_connections_listener()
         if (newsock <= 0)
             continue;
         client_data new_client(newsock, cli_addr, clilen);
-        active_client[0] = new_client;
         std::thread *thr = new std::thread([this, new_client] () { client_listener(new_client); });
         std::lock_guard<std::mutex> lock(threads_list_lock);
         threads_list.push_back(thr);
@@ -72,6 +71,10 @@ void socket_communication::client_listener(client_data curr_client)
         std::wstring request = unicode_to_wstring(buffer, s);
         std::map<std::string, std::wstring> args;
         args["request"] = request;
+        if (curr_client.is_authorized)
+            args["is_auth"] = ascii_to_wstring("true");
+        else
+            args["is_auth"] = ascii_to_wstring("false");
         loop->add_task("recv_parse", args);
     }
 }
