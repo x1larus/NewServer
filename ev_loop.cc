@@ -27,8 +27,6 @@ void ev_loop::loop()
             recv_parse(curr_task.second);
         if (command == "global")
             build_request(curr_task.second);
-        if (command == "login")
-            sender->add_new_active_client()
     }
 }
 
@@ -80,8 +78,6 @@ void ev_loop::recv_parse(std::map<std::string, std::wstring> args)
     }
     std::string command = unicode_to_ascii(result["TYPE"]);
     if (command.empty())
-        return;
-    if ((command != "login") && (args["is_auth"] == ascii_to_wstring("false")))
         return;
     add_task(command, result);
     return;

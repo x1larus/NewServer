@@ -18,6 +18,7 @@ socket_communication::socket_communication()
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     stop_server = false;
     loop = nullptr;
+    id_count = 0;
     return;
 }
 
@@ -71,10 +72,8 @@ void socket_communication::client_listener(client_data curr_client)
         std::wstring request = unicode_to_wstring(buffer, s);
         std::map<std::string, std::wstring> args;
         args["request"] = request;
-        if (curr_client.is_authorized)
-            args["is_auth"] = ascii_to_wstring("true");
-        else
-            args["is_auth"] = ascii_to_wstring("false");
+        if (!curr_client.is_authorized)
+            client_login(&curr_client, args);
         loop->add_task("recv_parse", args);
     }
 }
@@ -87,4 +86,50 @@ void socket_communication::send_to_client(std::wstring request)
     {
         send(x->second.socket, unicode_get_bytes(request), request.size()*2, 0);
     }
+}
+
+void socket_communication::client_login(client_data *client, std::map<std::string, std::wstring> args)
+{
+    std::map<std::string, std::wstring> result;
+    std::wstring request = args["request"];
+    if (request.empty())
+        return;
+    bool is_value = false;
+    std::wstring key;
+    std::wstring value;
+    for (unsigned int i = 0; i < request.size(); i++)
+    {
+        if ((request[i] % 256 == '=' || request[i] % 256 == ';' || request[i] == 0) && !is_value)
+            continue;
+        if ((request[i] % 256 == '.') && (request[i] / 256 == 0) && !is_value)
+            break;
+        if ((request[i] % 256 == '<') && (request[i] / 256 == 0) && !is_value) 
+        {
+            is_value = true;
+            continue;
+        }
+        if ((request[i] % 256 == '>') && (request[i] / 256 == 0) && (request[i+1] % 256 == ';') && (request[i+1] / 256 == 0))
+        {
+            is_value = false;
+            result[unicode_to_ascii(key)] = value;
+            key.erase();
+            value.erase();
+            continue;
+        }
+
+        //default
+        if (is_value)
+            value.push_back(request[i]);
+        else
+            key.push_back(request[i]);
+    }
+    //parser end
+
+    std::wstring nick = result["LOGIN"];
+    if (nick.empty())
+        return;
+    client->nickname = nick;
+    std::lock_guard<std::mutex> lock(active_client_lock);
+    active_client[id_count++] = *client;
+    return;
 }
