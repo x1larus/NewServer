@@ -23,8 +23,6 @@ void ev_loop::loop()
         task_queue.pop();
         task_queue_lock.unlock();
         std::string command = curr_task.first;
-        if (command == "recv_parse")
-            recv_parse(curr_task.second);
         if (command == "global")
             build_request(curr_task.second);
     }
@@ -40,48 +38,6 @@ void ev_loop::add_task(std::string command, std::map<std::string, std::wstring> 
 }
 
 //request example : TYPE=<global>;SENDER=<x1larus>;RECIEVERS=<all>;MSG=<some fucking shit>.
-
-void ev_loop::recv_parse(std::map<std::string, std::wstring> args)
-{
-    std::map<std::string, std::wstring> result;
-    std::wstring request = args["request"];
-    if (request.empty())
-        return;
-    bool is_value = false;
-    std::wstring key;
-    std::wstring value;
-    for (unsigned int i = 0; i < request.size(); i++)
-    {
-        if ((request[i] % 256 == '=' || request[i] % 256 == ';' || request[i] == 0) && !is_value)
-            continue;
-        if ((request[i] % 256 == '.') && (request[i] / 256 == 0) && !is_value)
-            break;
-        if ((request[i] % 256 == '<') && (request[i] / 256 == 0) && !is_value) 
-        {
-            is_value = true;
-            continue;
-        }
-        if ((request[i] % 256 == '>') && (request[i] / 256 == 0) && (request[i+1] % 256 == ';') && (request[i+1] / 256 == 0))
-        {
-            is_value = false;
-            result[unicode_to_ascii(key)] = value;
-            key.erase();
-            value.erase();
-            continue;
-        }
-
-        //default
-        if (is_value)
-            value.push_back(request[i]);
-        else
-            key.push_back(request[i]);
-    }
-    std::string command = unicode_to_ascii(result["TYPE"]);
-    if (command.empty())
-        return;
-    add_task(command, result);
-    return;
-}
 
 void ev_loop::build_request(std::map<std::string, std::wstring> args)
 {

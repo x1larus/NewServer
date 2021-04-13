@@ -23,6 +23,7 @@ struct client_data
     socklen_t clilen;
     sockaddr_in cli_address;
     bool is_authorized;
+    bool is_active;
     std::wstring nickname;
     client_data() = default;
     client_data(int, sockaddr_in, socklen_t);
@@ -34,7 +35,7 @@ private:
     int sockfd;
     sockaddr_in srv_address;
     int port_number;
-    std::map<int, client_data> active_client;   
+    std::map<std::wstring, client_data*> active_client;   
     std::mutex active_client_lock;
     std::mutex threads_list_lock;
     std::vector<std::thread*> threads_list;
@@ -51,5 +52,7 @@ public:
     void start(int);
     void set_evloop_address(ev_loop*);
     void send_to_client(std::wstring);
-    void client_login(client_data*, std::map<std::string, std::wstring>);
+    void parser(std::wstring, client_data*);
+    bool client_login(std::wstring, std::wstring, client_data*);
+    void client_logout(std::wstring);
 };

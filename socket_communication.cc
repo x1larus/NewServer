@@ -6,6 +6,7 @@ client_data::client_data(int s, sockaddr_in in, socklen_t len)
     cli_address = in;
     clilen = len;
     is_authorized = false;
+    is_active = true;
     return;
 }
 
@@ -62,7 +63,7 @@ void socket_communication::incoming_connections_listener()
 
 void socket_communication::client_listener(client_data curr_client)
 {
-    while (!stop_server)
+    while (!stop_server && curr_client.is_active)
     {
         char buffer[MAX];
         bzero(buffer, MAX);
@@ -70,12 +71,12 @@ void socket_communication::client_listener(client_data curr_client)
         if (s == 0)
             continue;
         std::wstring request = unicode_to_wstring(buffer, s);
-        std::map<std::string, std::wstring> args;
-        args["request"] = request;
-        if (!curr_client.is_authorized)
-            client_login(&curr_client, args);
-        loop->add_task("recv_parse", args);
+        parser(request, &curr_client);
     }
+    //exit
+    std::lock_guard<std::mutex> lock(active_client_lock);
+    active_client.erase(curr_client.nickname);
+    return;
 }
 
 void socket_communication::send_to_client(std::wstring request)
@@ -84,14 +85,15 @@ void socket_communication::send_to_client(std::wstring request)
     std::wcout << request << std::endl;
     for (auto x = active_client.begin(); x != active_client.end(); x++)
     {
-        send(x->second.socket, unicode_get_bytes(request), request.size()*2, 0);
+        if (x->second->is_authorized)
+            send(x->second->socket, unicode_get_bytes(request), request.size()*2, 0);
     }
 }
 
-void socket_communication::client_login(client_data *client, std::map<std::string, std::wstring> args)
+//request example : TYPE=<global>;SENDER=<x1larus>;RECIEVERS=<all>;MSG=<some shit>.
+void socket_communication::parser(std::wstring request, client_data *client)
 {
     std::map<std::string, std::wstring> result;
-    std::wstring request = args["request"];
     if (request.empty())
         return;
     bool is_value = false;
@@ -123,13 +125,50 @@ void socket_communication::client_login(client_data *client, std::map<std::strin
         else
             key.push_back(request[i]);
     }
-    //parser end
-
-    std::wstring nick = result["LOGIN"];
-    if (nick.empty())
+    std::string command = unicode_to_ascii(result["TYPE"]);
+    if (command.empty())
         return;
-    client->nickname = nick;
+    if (!client->is_authorized && command == "login")
+    {
+        std::wstring login = result["LOGIN"];
+        std::wstring password = result["PASSWORD"];
+        if (login.empty() || password.empty())
+            return;
+        client_login(login, password, client);
+        return;
+    }
+    //register maybe?
+
+    //exit
+    if (command == "logout")
+    {
+        client_logout(client->nickname);
+        return;
+    }
+    if (client->is_authorized)
+        loop->add_task(command, result);
+    return;
+}
+
+bool socket_communication::client_login(std::wstring login, std::wstring password, client_data *client)
+{
     std::lock_guard<std::mutex> lock(active_client_lock);
-    active_client[id_count++] = *client;
+    for (auto x : active_client)
+    {
+        if (x.first == login)
+            return false;
+    }
+    client->is_authorized = true;
+    client->nickname = login;
+    active_client[login] = client;
+    return true;
+}
+
+void socket_communication::client_logout(std::wstring login)
+{
+    std::lock_guard<std::mutex> lock(active_client_lock);
+    send(active_client[login]->socket, "exit", 5, 0);
+    shutdown(active_client[login]->socket, SHUT_RDWR);
+    close(active_client[login]->socket);
     return;
 }
