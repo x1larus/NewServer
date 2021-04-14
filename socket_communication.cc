@@ -128,18 +128,28 @@ void socket_communication::parser(std::wstring request, client_data *client)
     std::string command = unicode_to_ascii(result["TYPE"]);
     if (command.empty())
         return;
+    result["SENDER"] = client->nickname;
     if (!client->is_authorized && command == "login")
     {
         std::wstring login = result["LOGIN"];
         std::wstring password = result["PASSWORD"];
         if (login.empty() || password.empty())
             return;
-        client_login(login, password, client);
+        if (client_login(login, password, client))
+            send(client->socket, unicode_get_bytes(ascii_to_wstring("TYPE=<auth>;AUTH=<true>;.")), 25*2, 0);
+        else
+            send(client->socket, unicode_get_bytes(ascii_to_wstring("TYPE=<auth>;AUTH=<false>;.")), 26*2, 0);
         return;
     }
     //register maybe?
 
     //exit
+    if (command == "logout" && !client->is_authorized)
+    {
+        send(client->socket, unicode_get_bytes(ascii_to_wstring("exit")), 8, 0);
+        return;
+    }
+
     if (command == "logout")
     {
         client_logout(client->nickname);
@@ -167,7 +177,7 @@ bool socket_communication::client_login(std::wstring login, std::wstring passwor
 void socket_communication::client_logout(std::wstring login)
 {
     std::lock_guard<std::mutex> lock(active_client_lock);
-    send(active_client[login]->socket, "exit", 5, 0);
+    send(active_client[login]->socket, unicode_get_bytes(ascii_to_wstring("exit")), 8, 0);
     shutdown(active_client[login]->socket, SHUT_RDWR);
     close(active_client[login]->socket);
     return;
