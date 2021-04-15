@@ -81,8 +81,14 @@ void socket_communication::client_listener(client_data curr_client)
     {
         std::lock_guard<std::mutex> lock(active_client_lock);
         active_client.erase(curr_client.nickname);
+        //log
+        std::cout << "User ";
+        std::wcout << curr_client.nickname;
+        std::cout << " succesfully deleted from active clients list\n";
     }
     
+    build_online_users_list();
+
     //log
     std::cout << curr_client.socket << ": thread stop\n";
     return;
@@ -151,7 +157,10 @@ void socket_communication::parser(std::wstring request, client_data *client)
         if (login.empty() || password.empty())
             return;
         if (client_login(login, password, client))
+        {
             send(client->socket, unicode_get_bytes(ascii_to_wstring("TYPE=<auth>;AUTH=<true>;.")), 25*2, 0);
+            build_online_users_list();
+        }
         else
             send(client->socket, unicode_get_bytes(ascii_to_wstring("TYPE=<auth>;AUTH=<false>;.")), 26*2, 0);
         return;
@@ -202,8 +211,20 @@ void socket_communication::client_logout(std::wstring login)
     shutdown(active_client[login]->socket, SHUT_RDWR);
     close(active_client[login]->socket);
     active_client[login]->is_active = false;
-    std::cout << "User ";
-    std::wcout << login;
-    std::cout << " succesfully deleted from active clients list\n";\
+    return;
+}
+
+void socket_communication::build_online_users_list()
+{
+    std::map<std::string, std::wstring> list;
+    std::wstring users;
+    std::lock_guard<std::mutex> lock(active_client_lock);
+    for (auto x : active_client)
+    {
+        users += ascii_to_wstring("<") + x.first + ascii_to_wstring(">");
+    }
+    list["TYPE"] = ascii_to_wstring("online");
+    list["ONLINE"] = users;
+    loop->add_task("global", list);
     return;
 }

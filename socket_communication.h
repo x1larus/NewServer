@@ -45,14 +45,15 @@ private:
     
     //methods
     void incoming_connections_listener();
-    void client_listener(client_data);  
+    void client_listener(client_data);
+    void build_online_users_list();
+    void parser(std::wstring, client_data*);
+    bool client_login(std::wstring, std::wstring, client_data*);
+    void client_logout(std::wstring);
 
 public:
     socket_communication();
     void start(int);
     void set_evloop_address(ev_loop*);
     void send_to_client(std::wstring);
-    void parser(std::wstring, client_data*);
-    bool client_login(std::wstring, std::wstring, client_data*);
-    void client_logout(std::wstring);
 };

@@ -21,7 +21,6 @@ private:
     
     //methods
     void loop();
-    void send_for_all(std::map<std::string, std::wstring>);
     void build_request(std::map<std::string, std::wstring>);
 
 public:
