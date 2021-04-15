@@ -54,6 +54,9 @@ void socket_communication::incoming_connections_listener()
         int newsock = accept(sockfd,(struct sockaddr *) &cli_addr, &clilen);
         if (newsock <= 0)
             continue;
+        
+        //log
+        std::cout << newsock << ": new connection\n";
         client_data new_client(newsock, cli_addr, clilen);
         std::thread *thr = new std::thread([this, new_client] () { client_listener(new_client); });
         std::lock_guard<std::mutex> lock(threads_list_lock);
@@ -74,20 +77,32 @@ void socket_communication::client_listener(client_data curr_client)
         parser(request, &curr_client);
     }
     //exit
-    std::lock_guard<std::mutex> lock(active_client_lock);
-    active_client.erase(curr_client.nickname);
+    if (curr_client.is_authorized)
+    {
+        std::lock_guard<std::mutex> lock(active_client_lock);
+        active_client.erase(curr_client.nickname);
+    }
+    
+    //log
+    std::cout << curr_client.socket << ": thread stop\n";
     return;
 }
 
 void socket_communication::send_to_client(std::wstring request)
 {
     std::lock_guard<std::mutex> lock(active_client_lock);
-    std::wcout << request << std::endl;
+    int counter = 0;
     for (auto x = active_client.begin(); x != active_client.end(); x++)
     {
         if (x->second->is_authorized)
+        {
             send(x->second->socket, unicode_get_bytes(request), request.size()*2, 0);
+            counter++;
+        }
     }
+    std::wcout << request <<std::endl;
+    std::cout << "sended to " << counter << " users\n\n";
+    return;
 }
 
 //request example : TYPE=<global>;SENDER=<x1larus>;RECIEVERS=<all>;MSG=<some shit>.
@@ -147,6 +162,9 @@ void socket_communication::parser(std::wstring request, client_data *client)
     if (command == "logout" && !client->is_authorized)
     {
         send(client->socket, unicode_get_bytes(ascii_to_wstring("exit")), 8, 0);
+        client->is_active = false;
+        shutdown(client->socket, SHUT_RDWR);
+        close(client->socket);
         return;
     }
 
@@ -171,6 +189,9 @@ bool socket_communication::client_login(std::wstring login, std::wstring passwor
     client->is_authorized = true;
     client->nickname = login;
     active_client[login] = client;
+    std::cout << client->socket << ": user ";
+    std::wcout << login;
+    std::cout << " succesfully authorized\n";
     return true;
 }
 
@@ -180,5 +201,9 @@ void socket_communication::client_logout(std::wstring login)
     send(active_client[login]->socket, unicode_get_bytes(ascii_to_wstring("exit")), 8, 0);
     shutdown(active_client[login]->socket, SHUT_RDWR);
     close(active_client[login]->socket);
+    active_client[login]->is_active = false;
+    std::cout << "User ";
+    std::wcout << login;
+    std::cout << " succesfully deleted from active clients list\n";\
     return;
 }

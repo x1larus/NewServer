@@ -8,6 +8,9 @@ int main(int argc, char **argv)
     ev_loop loop;
     sender.set_evloop_address(&loop);
     loop.set_sender_address(&sender);
-    sender.start(std::atoi(argv[1]));
+    int port = 3333;
+    if (argc == 2)
+        port = std::atoi(argv[1]);
+    sender.start(port);
     return 0;
 }
